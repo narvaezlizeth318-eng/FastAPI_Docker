@@ -1,81 +1,63 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-
-app = FastAPI(
-    title="API de Productos",
-    description="Documentación de la API para la gestión de productos.",
-    version="1.0.0"
-)
-
-# Activar la API para ser consumida desde otro dominio
 from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="EV02 - narvaezlizeth318")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # permite cualquier origen (CodePen incluido)
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+db_productos = []
+db_usuarios = []
 
-# Modelo Pydantic
 class Producto(BaseModel):
-    id: int
+    id: int = None
     nombre: str
     precio: float
+    stock: int = 0
 
-# "Base de datos" simulada
-productos = {
-    1: {"id": 1, "nombre": "Laptop", "precio": 3500.0},
-    2: {"id": 2, "nombre": "Teclado", "precio": 120.0},
-    3: {"id": 3, "nombre": "Mouse", "precio": 45.5},
-    4: {"id": 4, "nombre": "Monitor", "precio": 900.0},
-    5: {"id": 5, "nombre": "Audífonos", "precio": 150.0},
-    6: {"id": 6, "nombre": "Webcam", "precio": 200.0},
-}
+class Usuario(BaseModel):
+    id: int = None
+    nombre: str
+    email: str
+    rol: str
 
-# Ruta raíz
 @app.get("/")
-def root():
-    return {"message": "API FastAPI en Docker funcionando"}
+def inicio():
+    return {"mensaje": "API EV02 funcionando"}
 
-# Listar los productos
 @app.get("/productos")
-def get_productos():
-    return list(productos.values())
+def listar_productos():
+    return db_productos
 
-# Listar un producto
-@app.get("/productos/{producto_id}")
-def get_producto(producto_id: int):
-    if producto_id not in productos:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return productos[producto_id]
-
-# Crear un producto
 @app.post("/productos")
-def create_producto(producto: Producto):
-    if producto.id in productos:
-        raise HTTPException(status_code=400, detail="El ID ya existe")
-    productos[producto.id] = producto.dict()
-    return {"message": "Producto creado", "item": producto}
+def crear_producto(p: Producto):
+    p.id = len(db_productos)+1
+    db_productos.append(p.dict())
+    return p
 
-# Actualizar un producto
-@app.put("/productos/{producto_id}")
-def update_producto(producto_id: int, producto: Producto):
-    if producto_id not in productos:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
+@app.delete("/productos/{id_prod}")
+def borrar_producto(id_prod: int):
+    global db_productos
+    db_productos = [x for x in db_productos if x['id'] != id_prod]
+    return {"ok": True}
 
-    if producto_id != producto.id:
-        raise HTTPException(status_code=400, detail="El ID del producto no coincide con la URL")
+@app.get("/usuarios")
+def listar_usuarios():
+    return db_usuarios
 
-    productos[producto_id] = producto.dict()
-    return {"message": "Producto actualizado", "item": producto}
+@app.post("/usuarios")
+def crear_usuario(u: Usuario):
+    u.id = len(db_usuarios)+1
+    db_usuarios.append(u.dict())
+    return u
 
-# Eliminar un producto
-@app.delete("/productos/{producto_id}")
-def delete_producto(producto_id: int):
-    if producto_id not in productos:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    eliminado = productos.pop(producto_id)
-    return {"message": "Producto eliminado", "item": eliminado}
+@app.delete("/usuarios/{id_user}")
+def borrar_usuario(id_user: int):
+    global db_usuarios
+    db_usuarios = [x for x in db_usuarios if x['id'] != id_user]
+    return {"ok": True}

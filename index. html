@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EV02 - SENA - Lizeth Narvaez</title>
+<style>
+body{font-family:Arial;background:#f4f4f9;padding:20px}
+.card{background:white;padding:15px;border-radius:8px;margin-bottom:20px;box-shadow:0 2px 5px #0002}
+button{background:#1d4ed8;color:white;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;margin:2px}
+input{padding:6px;margin:3px;border:1px solid #ccc;border-radius:4px}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}
+</style>
+</head>
+<body>
+<h1>EV02 - Gestión Productos y Usuarios - Lizeth Narvaez</h1>
+
+<div class="card">
+<h2>Productos</h2>
+<input id="pNombre" placeholder="Nombre producto">
+<input id="pPrecio" type="number" placeholder="Precio">
+<input id="pStock" type="number" placeholder="Stock">
+<button onclick="gestorProductos.crear()">Crear Producto</button>
+<table><thead><tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acción</th></tr></thead><tbody id="tablaProductos"></tbody></table>
+</div>
+
+<div class="card">
+<h2>Usuarios</h2>
+<input id="uNombre" placeholder="Nombre">
+<input id="uEmail" placeholder="Email">
+<input id="uRol" placeholder="Rol: admin/cliente">
+<button onclick="gestorUsuarios.crear()">Crear Usuario</button>
+<table><thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Acción</th></tr></thead><tbody id="tablaUsuarios"></tbody></table>
+</div>
+
+<script>
+// POO - EV02 SENA
+const API_URL = "http://localhost:8000";
+
+class ApiClient {
+  constructor(baseUrl){ this.baseUrl = baseUrl; }
+  async get(ruta){ const r = await fetch(this.baseUrl+ruta); return r.json(); }
+  async post(ruta, data){ const r = await fetch(this.baseUrl+ruta,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); return r.json(); }
+  async del(ruta){ const r = await fetch(this.baseUrl+ruta,{method:'DELETE'}); return r.json(); }
+}
+
+class Producto {
+  constructor(nombre, precio, stock){ this.nombre=nombre; this.precio=parseFloat(precio); this.stock=parseInt(stock); }
+}
+
+class Usuario {
+  constructor(nombre, email, rol){ this.nombre=nombre; this.email=email; this.rol=rol; }
+}
+
+class GestorProductos {
+  constructor(api){ this.api=api; }
+  async listar(){ const datos = await this.api.get("/productos"); const tbody=document.getElementById("tablaProductos"); tbody.innerHTML=""; datos.forEach(p=>{ tbody.innerHTML+=`<tr><td>${p.id}</td><td>${p.nombre}</td><td>${p.precio}</td><td>${p.stock}</td><td><button onclick="gestorProductos.eliminar(${p.id})">Borrar</button></td></tr>` }); }
+  async crear(){ const prod = new Producto(document.getElementById("pNombre").value, document.getElementById("pPrecio").value, document.getElementById("pStock").value); await this.api.post("/productos", prod); this.listar(); }
+  async eliminar(id){ await this.api.del(`/productos/${id}`); this.listar(); }
+}
+
+class GestorUsuarios {
+  constructor(api){ this.api=api; }
+  async listar(){ const datos = await this.api.get("/usuarios"); const tbody=document.getElementById("tablaUsuarios"); tbody.innerHTML=""; datos.forEach(u=>{ tbody.innerHTML+=`<tr><td>${u.id}</td><td>${u.nombre}</td><td>${u.email}</td><td>${u.rol}</td><td><button onclick="gestorUsuarios.eliminar(${u.id})">Borrar</button></td></tr>` }); }
+  async crear(){ const user = new Usuario(document.getElementById("uNombre").value, document.getElementById("uEmail").value, document.getElementById("uRol").value); await this.api.post("/usuarios", user); this.listar(); }
+  async eliminar(id){ await this.api.del(`/usuarios/${id}`); this.listar(); }
+}
+
+const cliente = new ApiClient(API_URL);
+const gestorProductos = new GestorProductos(cliente);
+const gestorUsuarios = new GestorUsuarios(cliente);
+gestorProductos.listar();
+gestorUsuarios.listar();
+</script>
+</body>
+</html>
